@@ -4,8 +4,8 @@ use tokio::{fs::File, io::AsyncReadExt};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Settings {
-    pub bind_ip: String,
-    pub bind_port: u16,
+    pub ip: String,
+    pub port: u16,
 }
 
 pub async fn load_from_file(path: &str) -> Result<Settings> {

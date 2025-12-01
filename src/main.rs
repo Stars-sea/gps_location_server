@@ -10,7 +10,7 @@ async fn main() {
     env_logger::init();
 
     let settings = settings::load_from_file("settings.json").await.unwrap();
-    let address = format!("{}:{}", settings.bind_ip, settings.bind_port);
+    let address = format!("{}:{}", settings.ip, settings.port);
 
     let (msg_tx, _) = broadcast::channel::<String>(16);
 
