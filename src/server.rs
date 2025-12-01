@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use log::{info, warn};
+use log::{debug, info, warn};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
@@ -31,6 +31,10 @@ async fn client_handler(
                     }
                     Ok(n) => {
                         let received = String::from_utf8_lossy(&client_data[..n]);
+                        if received == "HEARTBEAT" {
+                            debug!("received heartbeat from {}", client_addr);
+                            continue;
+                        }
                         info!("received from {}: {}", client_addr, received);
                     }
                     Err(e) => {
@@ -62,12 +66,13 @@ async fn client_handler(
                 }
             }
 
-            _ = tokio::time::sleep(heartbeat_duration) => {
+            _ = tokio::time::sleep(heartbeat_duration), if heartbeat_duration.as_secs() > 0 => {
                 warn!("client {} timed out due to inactivity", client_addr);
                 break;
             }
         }
     }
+
     info!("client disconnected: {}", client_addr);
 }
 
