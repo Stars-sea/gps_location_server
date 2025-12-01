@@ -15,7 +15,7 @@ async fn main() {
     let (msg_tx, _) = broadcast::channel::<String>(16);
 
     info!("starting server at {}", address);
-    tokio::spawn(server::server_loop(address, msg_tx.clone()));
+    tokio::spawn(server::server_loop(settings, msg_tx.clone()));
 
     let mut stdin = BufReader::new(tokio::io::stdin());
     let mut line = String::new();

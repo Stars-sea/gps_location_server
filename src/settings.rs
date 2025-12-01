@@ -6,6 +6,7 @@ use tokio::{fs::File, io::AsyncReadExt};
 pub struct Settings {
     pub ip: String,
     pub port: u16,
+    pub heartbeat_sec: u64,
 }
 
 pub async fn load_from_file(path: &str) -> Result<Settings> {
