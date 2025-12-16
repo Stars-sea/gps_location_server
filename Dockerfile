@@ -32,5 +32,7 @@ COPY --from=builder /app/target/release/gps_location_server ./
 COPY --from=builder /app/settings.json ./
 
 EXPOSE 1234
+ENV RUST_LOG=info
+RUN mkdir ./output
 
 CMD ["./gps_location_server"]
