@@ -1,5 +1,5 @@
 {
-    "ip": "0.0.0.0",
-    "port": 1234,
-    "heartbeat_sec": 60
+    "address": "0.0.0.0:1234",
+    "heartbeat_sec": 60,
+    "output_dir": "./output"
 }

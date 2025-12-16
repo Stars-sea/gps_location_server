@@ -4,17 +4,17 @@ use tokio::sync::broadcast;
 
 mod server;
 mod settings;
+mod client_info;
 
 #[tokio::main]
 async fn main() {
     env_logger::init();
 
     let settings = settings::load_from_file("settings.json").await.unwrap();
-    let address = format!("{}:{}", settings.ip, settings.port);
 
     let (msg_tx, _) = broadcast::channel::<String>(16);
 
-    info!("starting server at {}", address);
+    info!("starting server at {}", settings.address);
     tokio::spawn(server::server_loop(settings, msg_tx.clone()));
 
     let mut stdin = BufReader::new(tokio::io::stdin());
