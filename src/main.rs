@@ -2,7 +2,7 @@ use log::{error, info};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::broadcast;
 
-mod client;
+mod client_handler;
 mod client_info;
 mod server;
 mod settings;

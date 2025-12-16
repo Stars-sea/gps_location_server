@@ -5,7 +5,7 @@ use tokio::fs;
 use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 
-use crate::client::ClientHandler;
+use crate::client_handler::ClientHandler;
 use crate::settings::Settings;
 
 pub async fn server_loop(settings: Settings, msg_tx: broadcast::Sender<String>) -> Result<()> {

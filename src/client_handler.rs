@@ -83,7 +83,7 @@ impl ClientHandler {
             return Err(e.into());
         }
 
-        let read_len = read_result.unwrap();
+        let read_len = read_result?;
         if read_len == 0 {
             info!("client {} disconnected", self.client_addr);
             return Err(anyhow!("client disconnected"));
@@ -154,12 +154,6 @@ impl ClientHandler {
 
     async fn shutdown_client(&mut self) {
         if let Some(writer) = self.output_writer.as_mut() {
-            if let Err(e) = writer.flush().await {
-                warn!(
-                    "failed to flush output file for client {}: {}",
-                    self.client_addr, e
-                );
-            }
             if let Err(e) = writer.shutdown().await {
                 warn!(
                     "failed to close output file for client {}: {}",
