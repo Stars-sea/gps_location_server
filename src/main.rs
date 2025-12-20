@@ -1,6 +1,8 @@
+use anyhow::Result;
 use log::{error, info};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::broadcast;
+use tonic::transport::Server;
 
 mod client_handler;
 mod client_info;
@@ -8,16 +10,33 @@ mod server;
 mod settings;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     env_logger::init();
 
-    let settings = settings::load_from_file("settings.json").await.unwrap();
+    let settings = settings::load_from_file("settings.json").await?;
+    let grpc_address = settings.grpc_address.clone().parse()?;
 
     let (msg_tx, _) = broadcast::channel::<String>(16);
 
     info!("starting server at {}", settings.address);
-    tokio::spawn(server::server_loop(settings, msg_tx.clone()));
+    let server = server::Server::new(settings, msg_tx.clone());
+    let server_clone = server.clone();
 
+    // Start TCP server loop
+    tokio::spawn(async move { server_clone.server_loop().await.unwrap() });
+
+    // Start console input loop
+    tokio::spawn(async move { console_loop(msg_tx).await });
+
+    // Start gRPC server
+    Server::builder()
+        .add_service(server::ControllerServer::new(server))
+        .serve(grpc_address)
+        .await?;
+    Ok(())
+}
+
+async fn console_loop(msg_tx: broadcast::Sender<String>) {
     let mut stdin = BufReader::new(tokio::io::stdin());
     let mut line = String::new();
 

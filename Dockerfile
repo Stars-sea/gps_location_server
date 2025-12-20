@@ -17,7 +17,7 @@ FROM rust:alpine AS builder
 # index = "sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/"
 # EOF
 
-RUN apk add --no-cache musl-dev
+RUN apk add --no-cache musl-dev protoc protobuf-dev
 
 WORKDIR /app
 COPY . ./
@@ -28,10 +28,10 @@ RUN cargo build --release
 FROM alpine:latest
 
 WORKDIR /app
-COPY --from=builder /app/target/release/gps_location_server ./
-COPY --from=builder /app/settings.json ./
+COPY --from=builder /app/target/release/ ./
 
 EXPOSE 1234
+EXPOSE 1235
 ENV RUST_LOG=info
 RUN mkdir ./output
 

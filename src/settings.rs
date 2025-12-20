@@ -1,10 +1,11 @@
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncReadExt};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
     pub address: String,
+    pub grpc_address: String,
     pub heartbeat_sec: u64,
     pub output_dir: String,
 }

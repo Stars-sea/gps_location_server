@@ -1,0 +1,40 @@
+syntax = "proto3";
+package controller;
+
+/*
+ * Interfaces to controll clients
+ */
+service Controller {
+    /*
+     * Get the list of online clients
+     */
+    rpc GetOnlineClients(OnlineClientsRequest) returns (OnlineClientsResponse);
+
+    /*
+     * Get the log of specific client
+     */
+    rpc GetClientLog(ClientLogRequest) returns (ClientLogResponse);
+}
+
+message ClientInfo {
+    string imei = 1;
+    string iccid = 2;
+    string fver = 3;
+    int32 csq = 4;
+}
+
+message OnlineClientsRequest {
+}
+
+message OnlineClientsResponse {
+    repeated ClientInfo clients = 1;
+}
+
+message ClientLogRequest {
+    string imei = 1;
+}
+
+message ClientLogResponse {
+    bool found = 1;
+    optional string log = 2;
+}
