@@ -114,7 +114,11 @@ impl ClientHandler {
             info!("registered client: {:?}", info.identifier());
 
             let path = PathBuf::from(&self.output_dir).join(info.identifier());
-            let file = fs::File::create(path).await?;
+            let file = fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)
+                .await?;
             self.output_writer.replace(file);
             return Ok(());
         }
