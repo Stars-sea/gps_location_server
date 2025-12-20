@@ -6,7 +6,7 @@ use tonic::transport::Server;
 
 mod client_handler;
 mod client_info;
-mod server;
+pub mod server;
 mod settings;
 
 #[tokio::main]

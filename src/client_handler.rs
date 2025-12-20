@@ -41,6 +41,19 @@ impl ClientHandler {
         }
     }
 
+    pub async fn verify_client(&mut self) -> Result<ClientInfo> {
+        let mut client_data = vec![0u8; 1024];
+
+        let read_result = self.client.read(&mut client_data).await;
+        self.handle_read_result(read_result, &mut client_data)
+            .await?;
+
+        return self
+            .client_info
+            .clone()
+            .ok_or(anyhow!("failed to verify client"));
+    }
+
     pub async fn run(&mut self) {
         info!("client connected: {}", self.client_addr);
 
@@ -113,7 +126,7 @@ impl ClientHandler {
             self.client_info.replace(info.clone());
             info!("registered client: {:?}", info.identifier());
 
-            let path = PathBuf::from(&self.output_dir).join(info.identifier());
+            let path = log_path(&self.output_dir, &info.identifier());
             let file = fs::OpenOptions::new()
                 .create(true)
                 .append(true)
@@ -171,4 +184,8 @@ impl ClientHandler {
         self.client_info = None;
         self.client.shutdown().await.ok();
     }
+}
+
+pub fn log_path(output_dir: &str, id: &str) -> PathBuf {
+    PathBuf::from(output_dir).join(id)
 }

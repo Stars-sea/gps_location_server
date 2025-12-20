@@ -35,6 +35,5 @@ message ClientLogRequest {
 }
 
 message ClientLogResponse {
-    bool found = 1;
-    optional string log = 2;
+    optional string log = 1;
 }
