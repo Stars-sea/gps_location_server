@@ -9,9 +9,9 @@ use tokio::sync::{Mutex, broadcast};
 use tokio::time;
 use tonic::{Request, Response, Status};
 
-use crate::client_command::ClientCommand;
-use crate::client_handler::{self, ClientHandler};
-use crate::client_info::ClientInfo;
+use crate::client::command::ClientCommand;
+use crate::client::handler::{self, ClientHandler};
+use crate::client::info::ClientInfo;
 use crate::server::grpc::controller_server::Controller;
 use crate::server::grpc::*;
 use crate::settings::Settings;
@@ -111,7 +111,7 @@ impl Controller for Server {
     ) -> Result<Response<ClientLogResponse>, Status> {
         let imei = &request.get_ref().imei;
 
-        let log_path = client_handler::log_path(&self.settings.output_dir, imei);
+        let log_path = handler::log_path(&self.settings.output_dir, imei);
         let log_content = fs::read_to_string(&log_path).await.ok();
 
         debug!(target: "gRPC", "client log for {}: {:?}", imei, log_content);

@@ -10,8 +10,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::{self, error::RecvError};
 
-use crate::client_command::ClientCommand;
-use crate::client_info::ClientInfo;
+use crate::client::command::ClientCommand;
+use crate::client::info::ClientInfo;
 
 pub struct ClientHandler {
     client: TcpStream,
@@ -125,10 +125,12 @@ impl ClientHandler {
     async fn handle_received_data(&mut self, data: &str) -> Result<()> {
         if self.client_info.is_none() {
             let info = ClientInfo::from_json(&data).unwrap();
-            self.client_info.replace(info.clone());
-            info!(target: "client_handler", "{self} registered as {}", info.identifier());
+            let id = info.identifier();
 
-            let path = log_path(&self.output_dir, &info.identifier());
+            self.client_info.replace(info);
+            info!(target: "client_handler", "{self} registered");
+
+            let path = log_path(&self.output_dir, &id);
             let file = fs::OpenOptions::new()
                 .create(true)
                 .append(true)

@@ -4,9 +4,11 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::broadcast;
 use tonic::transport::Server;
 
-mod client_command;
-mod client_handler;
-mod client_info;
+mod client {
+    pub mod command;
+    pub mod handler;
+    pub mod info;
+}
 pub mod server;
 mod settings;
 
@@ -18,7 +20,7 @@ async fn main() -> Result<()> {
     let address = settings.address.clone();
     let grpc_address = settings.grpc_address.clone().parse()?;
 
-    let (command_tx, _) = broadcast::channel::<client_command::ClientCommand>(16);
+    let (command_tx, _) = broadcast::channel::<client::command::ClientCommand>(16);
 
     let server = server::Server::new(settings, command_tx.clone());
     let server_clone = server.clone();
@@ -40,7 +42,7 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn console_loop(command_tx: broadcast::Sender<client_command::ClientCommand>) {
+async fn console_loop(command_tx: broadcast::Sender<client::command::ClientCommand>) {
     let mut stdin = BufReader::new(tokio::io::stdin());
     let mut line = String::new();
 
@@ -52,7 +54,7 @@ async fn console_loop(command_tx: broadcast::Sender<client_command::ClientComman
                 break;
             }
             Ok(_) => {
-                let command = client_command::parse_command(line.trim());
+                let command = client::command::parse_command(line.trim());
                 if command_tx.send(command).is_err() {
                     info!(target: "console", "no active receivers");
                 }
