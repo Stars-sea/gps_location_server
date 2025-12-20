@@ -24,15 +24,15 @@ async fn main() -> Result<()> {
     let server_clone = server.clone();
 
     // Start TCP server loop
-    info!("starting server at {}", address);
+    info!(target: "main", "starting server at {}", address);
     tokio::spawn(async move { server_clone.server_loop().await.unwrap() });
 
     // Start console input loop
-    info!("starting console input loop");
+    info!(target: "main", "starting console input loop");
     tokio::spawn(async move { console_loop(command_tx).await });
 
     // Start gRPC server
-    info!("starting gRPC server at {}", grpc_address);
+    info!(target: "main", "starting gRPC server at {}", grpc_address);
     Server::builder()
         .add_service(server::ControllerServer::new(server))
         .serve(grpc_address)
@@ -48,17 +48,17 @@ async fn console_loop(command_tx: broadcast::Sender<client_command::ClientComman
         line.clear();
         match stdin.read_line(&mut line).await {
             Ok(0) => {
-                info!("stdin closed.");
+                info!(target: "console", "stdin closed.");
                 break;
             }
             Ok(_) => {
                 let command = client_command::parse_command(line.trim());
                 if command_tx.send(command).is_err() {
-                    info!("no active receivers");
+                    info!(target: "console", "no active receivers");
                 }
             }
             Err(e) => {
-                error!("failed to read from stdin: {}", e);
+                error!(target: "console", "failed to read from stdin: {}", e);
                 break;
             }
         }

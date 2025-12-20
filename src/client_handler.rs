@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::net::SocketAddr;
 use std::{path::PathBuf, time::Duration};
 
@@ -56,7 +57,7 @@ impl ClientHandler {
     }
 
     pub async fn run(&mut self) {
-        info!("client connected: {}", self.client_addr);
+        info!(target: "client_handler", "{} connected", self);
 
         let mut client_data = vec![0u8; 1024];
 
@@ -77,14 +78,18 @@ impl ClientHandler {
                 }
 
                 _ = tokio::time::sleep(self.heartbeat_duration), if self.heartbeat_duration.as_secs() > 0 => {
-                    warn!("client {} timed out due to inactivity", self.client_addr);
+                    warn!(target: "client_handler", "{} timed out due to inactivity", self);
                     break;
                 }
             }
         }
 
-        info!("client disconnected: {}", self.client_addr);
+        info!(target: "client_handler", "{} disconnected", self);
         self.shutdown_client().await;
+    }
+
+    pub fn identifier(&self) -> Option<String> {
+        self.client_info.as_ref().map(|info| info.identifier())
     }
 
     async fn handle_read_result(
@@ -93,28 +98,24 @@ impl ClientHandler {
         client_data: &mut [u8],
     ) -> Result<()> {
         if let Err(e) = read_result {
-            error!("failed to read from client {}: {}", self.client_addr, e);
+            error!(target: "client_handler", "failed to read from {}: {}", self, e);
             return Err(e.into());
         }
 
         let read_len = read_result?;
         if read_len == 0 {
-            info!("client {} disconnected", self.client_addr);
             return Err(anyhow!("client disconnected"));
         }
 
         let received = String::from_utf8_lossy(&client_data[..read_len]);
         if received == "HEARTBEAT" {
-            debug!("received heartbeat from {}", self.client_addr);
+            debug!(target: "client_handler", "received heartbeat from {}", self);
             return Ok(());
         }
 
-        info!("received from {}: {}", self.client_addr, received);
+        info!(target: "client_handler", "received from {}: {}", self, received);
         if let Err(e) = self.handle_received_data(&received).await {
-            error!(
-                "failed to handle data from client {}: {}",
-                self.client_addr, e
-            );
+            error!(target: "client_handler", "failed to handle data from {}: {}", self, e);
             return Err(e.into());
         }
 
@@ -125,7 +126,7 @@ impl ClientHandler {
         if self.client_info.is_none() {
             let info = ClientInfo::from_json(&data).unwrap();
             self.client_info.replace(info.clone());
-            info!("registered client: {:?}", info.identifier());
+            info!(target: "client_handler", "{self} registered as {}", info.identifier());
 
             let path = log_path(&self.output_dir, &info.identifier());
             let file = fs::OpenOptions::new()
@@ -154,25 +155,24 @@ impl ClientHandler {
         if self.client_info.is_none() {
             return Ok(());
         }
-        let client_id = self.client_info.as_ref().unwrap().identifier();
 
         match console_result {
             Ok(command) => {
-                if !command.is_targeted(&client_id) {
+                if !command.is_targeted(&self.identifier().unwrap()) {
                     return Ok(());
                 }
 
                 let msg = format!("{}\n", command.command);
                 if let Err(e) = self.client.write_all(msg.as_bytes()).await {
-                    error!("failed to write to client {}: {}", self.client_addr, e);
+                    error!(target: "client_handler", "failed to write to {}: {}", self, e);
                     return Err(e.into());
                 }
             }
             Err(RecvError::Lagged(_)) => {
-                info!("client {} lagged", self.client_addr);
+                info!(target: "client_handler", "{} lagged", self);
             }
             Err(RecvError::Closed) => {
-                info!("broadcast channel closed");
+                error!(target: "client_handler", "broadcast channel closed");
                 return Err(anyhow!("broadcast channel closed"));
             }
         }
@@ -182,10 +182,7 @@ impl ClientHandler {
     async fn shutdown_client(&mut self) {
         if let Some(writer) = self.output_writer.as_mut() {
             if let Err(e) = writer.shutdown().await {
-                warn!(
-                    "failed to close output file for client {}: {}",
-                    self.client_addr, e
-                );
+                warn!(target: "client_handler", "failed to close output file for {}: {}", self, e);
             }
 
             self.output_writer = None;
@@ -193,6 +190,15 @@ impl ClientHandler {
 
         self.client_info = None;
         self.client.shutdown().await.ok();
+    }
+}
+
+impl Display for ClientHandler {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.identifier() {
+            Some(id) => write!(f, "client[addr={}, imei={}]", self.client_addr, id),
+            None => write!(f, "client[addr={}]", self.client_addr),
+        }
     }
 }
 
