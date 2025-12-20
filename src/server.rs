@@ -2,21 +2,22 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::Result;
+use log::{debug, warn};
 use tokio::fs;
 use tokio::net::TcpListener;
 use tokio::sync::{Mutex, broadcast};
 use tokio::time;
 use tonic::{Request, Response, Status};
 
+use crate::client_command::ClientCommand;
 use crate::client_handler::{self, ClientHandler};
 use crate::client_info::ClientInfo;
 use crate::server::grpc::controller_server::Controller;
-use crate::server::grpc::{
-    ClientLogRequest, ClientLogResponse, OnlineClientsRequest, OnlineClientsResponse,
-};
+use crate::server::grpc::*;
 use crate::settings::Settings;
 
 pub use crate::server::grpc::ClientInfo as ProtoClientInfo;
+pub use crate::server::grpc::SendCommandToClientRequest;
 pub use crate::server::grpc::controller_server::ControllerServer;
 
 mod grpc {
@@ -26,15 +27,15 @@ mod grpc {
 #[derive(Clone, Debug)]
 pub struct Server {
     settings: Settings,
-    msg_tx: broadcast::Sender<String>,
+    command_tx: broadcast::Sender<ClientCommand>,
     online_clients: Arc<Mutex<Vec<ClientInfo>>>,
 }
 
 impl Server {
-    pub fn new(settings: Settings, msg_tx: broadcast::Sender<String>) -> Self {
+    pub fn new(settings: Settings, command_tx: broadcast::Sender<ClientCommand>) -> Self {
         Self {
             settings,
-            msg_tx,
+            command_tx,
             online_clients: Arc::new(Mutex::new(Vec::new())),
         }
     }
@@ -57,7 +58,7 @@ impl Server {
             let mut client_handler = ClientHandler::new(
                 client,
                 client_addr,
-                self.msg_tx.subscribe(),
+                self.command_tx.subscribe(),
                 heartbeat_duration,
                 self.settings.output_dir.clone(),
             );
@@ -94,6 +95,8 @@ impl Controller for Server {
             .map(|c| c.into())
             .collect();
 
+        debug!(target: "gRPC", "online clients: {:?}", proto_clients);
+
         let response = OnlineClientsResponse {
             clients: proto_clients,
         };
@@ -111,8 +114,28 @@ impl Controller for Server {
         let log_path = client_handler::log_path(&self.settings.output_dir, imei);
         let log_content = fs::read_to_string(&log_path).await.ok();
 
+        debug!(target: "gRPC", "client log for {}: {:?}", imei, log_content);
+
         let response = ClientLogResponse { log: log_content };
 
+        Ok(Response::new(response))
+    }
+
+    #[doc = "Send command to specific client, imei for null means broadcast to all clients"]
+    async fn send_command(
+        &self,
+        request: Request<SendCommandToClientRequest>,
+    ) -> Result<Response<SendCommandToClientResponse>, Status> {
+        let command: ClientCommand = request.into_inner().into();
+
+        let send_err = self.command_tx.send(command.clone()).err();
+        if send_err.is_some() {
+            warn!(target: "gRPC", "no active receivers for command: {:?}", command);
+        }
+
+        let response = SendCommandToClientResponse {
+            success: send_err.is_none(),
+        };
         Ok(Response::new(response))
     }
 }

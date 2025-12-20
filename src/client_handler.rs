@@ -9,12 +9,13 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::{self, error::RecvError};
 
+use crate::client_command::ClientCommand;
 use crate::client_info::ClientInfo;
 
 pub struct ClientHandler {
     client: TcpStream,
     client_addr: SocketAddr,
-    msg_rx: broadcast::Receiver<String>,
+    command_rx: broadcast::Receiver<ClientCommand>,
     heartbeat_duration: Duration,
     output_dir: String,
 
@@ -26,14 +27,14 @@ impl ClientHandler {
     pub fn new(
         client: TcpStream,
         client_addr: SocketAddr,
-        msg_rx: broadcast::Receiver<String>,
+        command_rx: broadcast::Receiver<ClientCommand>,
         heartbeat_duration: Duration,
         output_dir: String,
     ) -> Self {
         Self {
             client,
             client_addr,
-            msg_rx,
+            command_rx,
             heartbeat_duration,
             output_dir,
             client_info: None,
@@ -69,8 +70,8 @@ impl ClientHandler {
                     }
                 }
 
-                console_data = self.msg_rx.recv() => {
-                    if self.handle_console_data(console_data).await.is_err() {
+                console_data = self.command_rx.recv() => {
+                    if self.handle_client_command(console_data).await.is_err() {
                         break;
                     }
                 }
@@ -146,13 +147,22 @@ impl ClientHandler {
         Ok(())
     }
 
-    async fn handle_console_data(
+    async fn handle_client_command(
         &mut self,
-        console_result: Result<String, RecvError>,
+        console_result: Result<ClientCommand, RecvError>,
     ) -> Result<()> {
+        if self.client_info.is_none() {
+            return Ok(());
+        }
+        let client_id = self.client_info.as_ref().unwrap().identifier();
+
         match console_result {
-            Ok(msg) => {
-                let msg = format!("{msg}\n");
+            Ok(command) => {
+                if !command.is_targeted(&client_id) {
+                    return Ok(());
+                }
+
+                let msg = format!("{}\n", command.command);
                 if let Err(e) = self.client.write_all(msg.as_bytes()).await {
                     error!("failed to write to client {}: {}", self.client_addr, e);
                     return Err(e.into());

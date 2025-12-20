@@ -14,6 +14,11 @@ service Controller {
      * Get the log of specific client
      */
     rpc GetClientLog(ClientLogRequest) returns (ClientLogResponse);
+
+    /*
+     * Send command to specific client, imei for null means broadcast to all clients
+     */
+    rpc SendCommand(SendCommandToClientRequest) returns (SendCommandToClientResponse);
 }
 
 message ClientInfo {
@@ -36,4 +41,13 @@ message ClientLogRequest {
 
 message ClientLogResponse {
     optional string log = 1;
+}
+
+message SendCommandToClientRequest {
+    optional string imei = 1;
+    string command = 2;
+}
+
+message SendCommandToClientResponse {
+    bool success = 1;
 }
