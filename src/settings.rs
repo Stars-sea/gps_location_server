@@ -8,6 +8,7 @@ pub struct Settings {
     pub grpc_address: String,
     pub heartbeat_sec: u64,
     pub output_dir: String,
+    pub verify_timeout: u64,
 }
 
 pub async fn load_from_file(path: &str) -> Result<Settings> {

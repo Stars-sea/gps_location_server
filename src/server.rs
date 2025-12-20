@@ -5,6 +5,7 @@ use anyhow::Result;
 use tokio::fs;
 use tokio::net::TcpListener;
 use tokio::sync::{Mutex, broadcast};
+use tokio::time;
 use tonic::{Request, Response, Status};
 
 use crate::client_handler::{self, ClientHandler};
@@ -51,6 +52,7 @@ impl Server {
         loop {
             let (client, client_addr) = listener.accept().await.unwrap();
             let online_clients = self.online_clients.clone();
+            let verify_timeout = Duration::from_secs(self.settings.verify_timeout);
 
             let mut client_handler = ClientHandler::new(
                 client,
@@ -61,7 +63,10 @@ impl Server {
             );
             tokio::spawn(async move {
                 // Verify client and add to online clients list
-                let info = client_handler.verify_client().await.unwrap();
+                let info = time::timeout(verify_timeout, client_handler.verify_client())
+                    .await
+                    .unwrap()
+                    .unwrap();
                 online_clients.lock().await.push(info.clone());
 
                 client_handler.run().await;
