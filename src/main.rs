@@ -5,7 +5,9 @@ use log::{error, info};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::sync::broadcast;
 
+#[cfg(feature = "grpc")]
 use crate::server::grpc::GrpcServer;
+#[cfg(feature = "rest")]
 use crate::server::rest::RestServer;
 
 mod client {
@@ -40,6 +42,7 @@ async fn main() -> Result<()> {
     tokio::spawn(async move { tcp_server.server_loop().await.expect("server loop error") });
 
     // Start REST server
+    #[cfg(feature = "rest")]
     if settings.rest.enabled {
         let rest_server = server.clone();
         info!(target: "main", "starting REST server at {}", settings.rest.address);
@@ -47,6 +50,7 @@ async fn main() -> Result<()> {
     }
 
     // Start gRPC server
+    #[cfg(feature = "grpc")]
     if settings.grpc.enabled {
         info!(target: "main", "starting gRPC server at {}", settings.grpc.address);
         tokio::spawn(async move { server.serve_grpc().await.expect("gRPC server error") });
