@@ -2,8 +2,6 @@ use std::fmt::{Display, Formatter};
 
 use serde::{Deserialize, Serialize};
 
-use crate::server::grpc::ProtoClientInfo;
-
 #[derive(Serialize, Deserialize, PartialEq, Eq, Clone, Debug)]
 pub struct ClientInfo {
     pub imei: String,
@@ -25,27 +23,5 @@ impl ClientInfo {
 impl Display for ClientInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "Client: [{}]", self.identifier())
-    }
-}
-
-impl From<ProtoClientInfo> for ClientInfo {
-    fn from(proto: ProtoClientInfo) -> Self {
-        Self {
-            imei: proto.imei,
-            iccid: proto.iccid,
-            fver: proto.fver,
-            csq: proto.csq,
-        }
-    }
-}
-
-impl Into<ProtoClientInfo> for ClientInfo {
-    fn into(self) -> ProtoClientInfo {
-        ProtoClientInfo {
-            imei: self.imei,
-            iccid: self.iccid,
-            fver: self.fver,
-            csq: self.csq,
-        }
     }
 }

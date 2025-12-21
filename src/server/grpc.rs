@@ -6,10 +6,8 @@ use tonic::{Request, Response, Status};
 use self::grpc::controller_server::Controller;
 use self::grpc::*;
 use super::Server;
-use crate::client::command::ClientCommand;
+use crate::client::{command, info};
 
-pub use self::grpc::ClientInfo as ProtoClientInfo;
-pub use self::grpc::SendCommandToClientRequest;
 use self::grpc::controller_server::ControllerServer;
 
 mod grpc {
@@ -39,7 +37,7 @@ impl Controller for Arc<Server> {
         &self,
         _request: Request<OnlineClientsRequest>,
     ) -> Result<Response<OnlineClientsResponse>, Status> {
-        let proto_clients: Vec<ProtoClientInfo> = self
+        let proto_clients: Vec<ClientInfo> = self
             .list_online_clients_impl()
             .await
             .into_iter()
@@ -71,10 +69,27 @@ impl Controller for Arc<Server> {
         &self,
         request: Request<SendCommandToClientRequest>,
     ) -> Result<Response<SendCommandToClientResponse>, Status> {
-        let command: ClientCommand = request.into_inner().into();
+        let command: command::ClientCommand = request.into_inner().into();
         let success = self.send_command_impl(&command);
 
         let response = SendCommandToClientResponse { success };
         Ok(Response::new(response))
+    }
+}
+
+impl From<info::ClientInfo> for ClientInfo {
+    fn from(info: info::ClientInfo) -> Self {
+        Self {
+            imei: info.imei,
+            iccid: info.iccid,
+            fver: info.fver,
+            csq: info.csq,
+        }
+    }
+}
+
+impl From<SendCommandToClientRequest> for command::ClientCommand {
+    fn from(req: SendCommandToClientRequest) -> Self {
+        command::ClientCommand::new(req.imei, req.command)
     }
 }

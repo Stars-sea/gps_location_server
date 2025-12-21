@@ -64,7 +64,7 @@ async fn console_loop(command_tx: broadcast::Sender<client::command::ClientComma
             return Ok(());
         }
 
-        let command = client::command::parse_command(line.trim());
+        let command = line.trim().parse()?;
         if command_tx.send(command).is_err() {
             info!(target: "console", "no active receivers");
         }

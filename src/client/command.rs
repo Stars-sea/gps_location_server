@@ -1,8 +1,6 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use serde::{Deserialize, Serialize};
-
-use crate::server::grpc::SendCommandToClientRequest;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientCommand {
@@ -30,18 +28,20 @@ impl ClientCommand {
     }
 }
 
-impl From<SendCommandToClientRequest> for ClientCommand {
-    fn from(req: SendCommandToClientRequest) -> Self {
-        ClientCommand::new(req.imei, req.command)
-    }
-}
+impl FromStr for ClientCommand {
+    type Err = anyhow::Error;
 
-impl Into<SendCommandToClientRequest> for ClientCommand {
-    fn into(self) -> SendCommandToClientRequest {
-        SendCommandToClientRequest {
-            imei: self.target,
-            command: self.command,
-        }
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        let parts: Vec<&str> = s.splitn(2, ':').collect();
+        let command = if parts.len() == 2 {
+            let target = parts[0].to_string();
+            let command = parts[1].to_string();
+            ClientCommand::new(Some(target), command)
+        } else {
+            ClientCommand::new_broadcast(s.to_string())
+        };
+
+        Ok(command)
     }
 }
 
@@ -52,16 +52,5 @@ impl Display for ClientCommand {
             None => "all",
         };
         write!(f, "{}:{}", target, self.command)
-    }
-}
-
-pub fn parse_command(input: &str) -> ClientCommand {
-    let parts: Vec<&str> = input.splitn(2, ':').collect();
-    if parts.len() == 2 {
-        let target = parts[0].to_string();
-        let command = parts[1].to_string();
-        ClientCommand::new(Some(target), command)
-    } else {
-        ClientCommand::new_broadcast(input.to_string())
     }
 }
