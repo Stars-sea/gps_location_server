@@ -44,7 +44,7 @@ message ClientLogResponse {
 }
 
 message SendCommandToClientRequest {
-    optional string imei = 1;
+    repeated string imei = 1;
     string command = 2;
 }
 

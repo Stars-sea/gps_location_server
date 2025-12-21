@@ -71,8 +71,8 @@ impl ClientHandler {
                     }
                 }
 
-                console_data = self.command_rx.recv() => {
-                    if self.handle_client_command(console_data).await.is_err() {
+                command = self.command_rx.recv() => {
+                    if self.handle_client_command(command).await.is_err() {
                         break;
                     }
                 }
@@ -152,13 +152,13 @@ impl ClientHandler {
 
     async fn handle_client_command(
         &mut self,
-        console_result: Result<ClientCommand, RecvError>,
+        command_result: Result<ClientCommand, RecvError>,
     ) -> Result<()> {
         if self.client_info.is_none() {
             return Ok(());
         }
 
-        match console_result {
+        match command_result {
             Ok(command) => {
                 if !command.is_targeted(&self.identifier().unwrap()) {
                     return Ok(());
