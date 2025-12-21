@@ -20,7 +20,7 @@ pub trait GrpcServer {
 
 impl GrpcServer for Server {
     async fn serve_grpc(self: Arc<Self>) -> Result<()> {
-        let grpc_address = self.settings.grpc_address.clone().parse()?;
+        let grpc_address = self.settings.grpc.address.clone().parse()?;
 
         tonic::transport::Server::builder()
             .add_service(ControllerServer::new(self))

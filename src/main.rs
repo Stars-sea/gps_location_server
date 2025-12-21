@@ -26,23 +26,28 @@ async fn main() -> Result<()> {
 
     let server = Arc::new(server::Server::new(settings.clone(), command_tx.clone()));
 
-    // Start console input loop
-    info!(target: "main", "starting console input loop");
-    tokio::spawn(async move { console_loop(command_tx).await.expect("console loop error") });
-
     // Start TCP server loop
     let tcp_server = server.clone();
     info!(target: "main", "starting TCP server at {}", settings.address);
     tokio::spawn(async move { tcp_server.server_loop().await.expect("server loop error") });
 
     // Start REST server
-    let rest_server = server.clone();
-    info!(target: "main", "starting REST server at {}", settings.rest_address);
-    tokio::spawn(async move { rest_server.serve_rest().await.expect("REST server error") });
+    if settings.rest.enabled {
+        let rest_server = server.clone();
+        info!(target: "main", "starting REST server at {}", settings.rest.address);
+        tokio::spawn(async move { rest_server.serve_rest().await.expect("REST server error") });
+    }
 
     // Start gRPC server
-    info!(target: "main", "starting gRPC server at {}", settings.grpc_address);
-    server.serve_grpc().await.expect("gRPC server error");
+    if settings.grpc.enabled {
+        info!(target: "main", "starting gRPC server at {}", settings.grpc.address);
+        tokio::spawn(async move { server.serve_grpc().await.expect("gRPC server error") });
+    }
+
+    // Start console input loop
+    info!(target: "main", "starting console input loop");
+    console_loop(command_tx).await.expect("console loop error");
+
     Ok(())
 }
 

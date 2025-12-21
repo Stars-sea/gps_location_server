@@ -5,12 +5,18 @@ use tokio::{fs::File, io::AsyncReadExt};
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
     pub address: String,
-    pub grpc_address: String,
-    pub rest_address: String,
+    pub grpc: ServiceConfig,
+    pub rest: ServiceConfig,
 
     pub heartbeat_sec: u64,
     pub output_dir: String,
     pub verify_timeout: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug)]
+pub struct ServiceConfig {
+    pub enabled: bool,
+    pub address: String,
 }
 
 pub async fn load_from_file(path: &str) -> Result<Settings> {

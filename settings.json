@@ -1,7 +1,13 @@
 {
     "address": "0.0.0.0:1234",
-    "grpc_address": "0.0.0.0:1235",
-    "rest_address": "0.0.0.0:3000",
+    "grpc": {
+        "enabled": false,
+        "address": "0.0.0.0:1235"
+    },
+    "rest": {
+        "enabled": true,
+        "address": "0.0.0.0:3000"
+    },
     
     "heartbeat_sec": 60,
     "output_dir": "./output",

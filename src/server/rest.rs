@@ -16,7 +16,7 @@ pub trait RestServer {
 
 impl RestServer for Server {
     async fn serve_rest(self: Arc<Self>) -> Result<()> {
-        let rest_address = &self.settings.rest_address;
+        let rest_address = &self.settings.rest.address;
         let listener = tokio::net::TcpListener::bind(rest_address).await.unwrap();
         axum::serve(listener, router(self.clone())).await?;
         Ok(())
