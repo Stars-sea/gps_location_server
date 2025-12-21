@@ -1,6 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::server;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientCommand {
     pub target: Option<String>,
     pub command: String,

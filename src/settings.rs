@@ -6,6 +6,8 @@ use tokio::{fs::File, io::AsyncReadExt};
 pub struct Settings {
     pub address: String,
     pub grpc_address: String,
+    pub rest_address: String,
+
     pub heartbeat_sec: u64,
     pub output_dir: String,
     pub verify_timeout: u64,

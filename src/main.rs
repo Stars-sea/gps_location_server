@@ -11,6 +11,7 @@ mod client {
     pub mod handler;
     pub mod info;
 }
+mod rest;
 pub mod server;
 mod settings;
 
@@ -21,6 +22,7 @@ async fn main() -> Result<()> {
     let settings = settings::load_from_file("settings.json").await?;
     let address = settings.address.clone();
     let grpc_address = settings.grpc_address.clone().parse()?;
+    let rest_address = settings.rest_address.clone();
 
     let (command_tx, _) = broadcast::channel::<client::command::ClientCommand>(16);
 
@@ -34,6 +36,16 @@ async fn main() -> Result<()> {
     // Start console input loop
     info!(target: "main", "starting console input loop");
     tokio::spawn(async move { console_loop(command_tx).await.expect("console loop error") });
+
+    // Start REST server
+    let rest_server = server.clone();
+    info!(target: "main", "starting REST server at {}", rest_address);
+    tokio::spawn(async move {
+        let listener = tokio::net::TcpListener::bind(rest_address).await.unwrap();
+        axum::serve(listener, rest::router(rest_server))
+            .await
+            .unwrap();
+    });
 
     // Start gRPC server
     info!(target: "main", "starting gRPC server at {}", grpc_address);
