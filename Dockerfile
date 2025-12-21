@@ -28,7 +28,8 @@ RUN cargo build --release
 FROM alpine:latest
 
 WORKDIR /app
-COPY --from=builder /app/target/release/ ./
+COPY --from=builder /app/target/release/gps_location_server ./
+COPY --from=builder /app/settings.json ./
 
 EXPOSE 1234
 EXPOSE 1235
