@@ -29,9 +29,11 @@
      -v ~/docker/gps_location_server/output:/app/output/ \
      -e RUST_LOG=info \
      -p 1234:1234 \
+     -p 1235:1235 \
+     -p 3000:3000 \
      gps_location_server
    ```
-4. 服务端在 `1234` 端口上部署完成，可以使用以下命令查看服务端日志：
+4. 服务端部署完成，可以使用以下命令查看服务端日志：
    ```bash
    $ sudo docker logs -f gps_location_server_container
    ```
@@ -61,6 +63,48 @@
    $ RUST_LOG=info ./gps_location_server
    ```
 5. 此时服务端在 `1234` 端口上部署完成
+
+## About `settings.json` / 关于 `settings.json`
+
+配置主要通过修改 `settings.json`
+```json
+{
+    "address": "0.0.0.0:1234",
+    "grpc": {
+        "enabled": false,
+        "address": "0.0.0.0:1235"
+    },
+    "rest": {
+        "enabled": true,
+        "address": "0.0.0.0:3000"
+    },
+    
+    "heartbeat_sec": 60,
+    "output_dir": "./output",
+    "verify_timeout": 10
+}
+```
+
+`address` 配置开启的监听模块的 IP 和端口，格式为 `ip:port`（`ip` 一般保持 `0.0.0.0`）
+
+`grpc` 负责控制 gRPC 服务，与其他程序交互
+- `grpc.enabled`：gRPC 服务是否开启
+- `grpc.address`：gRPC 监听地址
+
+`rest` 负责控制 REST 服务，提供 HTTP API
+- `grpc.enabled`：REST 服务是否开启
+- `grpc.address`：REST 监听地址
+
+`heartbeat_sec` 为心跳包间隔，确保不会出现 TCP 半连接的情况（单位：秒）
+
+`output_dir` 输出目录，记录模块发送的消息，文件以模块发送的 `imei` 字段命名
+
+`verify_timeout` 认证超时时间，新连接的模块需要在此时间内认证，否则断开连接（单位：秒）
+
+> #### ⚠️**注意**⚠️
+> 
+> 使用 Docker 部署需要注意 `Dockerfile` 和 `settings.json` 关联  
+> 务必确保配置的端口、输出目录等保持一致
 
 ## LICENSE / 许可
 

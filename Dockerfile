@@ -32,6 +32,7 @@ COPY --from=builder /app/target/release/ ./
 
 EXPOSE 1234
 EXPOSE 1235
+EXPOSE 3000
 ENV RUST_LOG=info
 RUN mkdir ./output
 
