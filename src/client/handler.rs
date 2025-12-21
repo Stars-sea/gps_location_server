@@ -10,8 +10,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::{self, error::RecvError};
 
-use crate::client::command::ClientCommand;
-use crate::client::info::ClientInfo;
+use super::command::ClientCommand;
+use super::info::ClientInfo;
 
 pub struct ClientHandler {
     client: TcpStream,

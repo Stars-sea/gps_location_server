@@ -1,6 +1,8 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
-use crate::server;
+use crate::server::grpc::SendCommandToClientRequest;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientCommand {
@@ -20,10 +22,6 @@ impl ClientCommand {
         }
     }
 
-    pub fn builder() -> ClientCommandBuilder {
-        ClientCommandBuilder::default()
-    }
-
     pub fn is_targeted(&self, id: &str) -> bool {
         match &self.target {
             Some(t) => t == id,
@@ -32,48 +30,28 @@ impl ClientCommand {
     }
 }
 
-impl From<server::SendCommandToClientRequest> for ClientCommand {
-    fn from(req: server::SendCommandToClientRequest) -> Self {
+impl From<SendCommandToClientRequest> for ClientCommand {
+    fn from(req: SendCommandToClientRequest) -> Self {
         ClientCommand::new(req.imei, req.command)
     }
 }
 
-impl Into<server::SendCommandToClientRequest> for ClientCommand {
-    fn into(self) -> server::SendCommandToClientRequest {
-        server::SendCommandToClientRequest {
+impl Into<SendCommandToClientRequest> for ClientCommand {
+    fn into(self) -> SendCommandToClientRequest {
+        SendCommandToClientRequest {
             imei: self.target,
             command: self.command,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct ClientCommandBuilder {
-    target: Option<String>,
-    command: String,
-}
-
-impl ClientCommandBuilder {
-    pub fn target(mut self, target: String) -> Self {
-        self.target = Some(target);
-        self
-    }
-
-    pub fn broadcast(mut self) -> Self {
-        self.target = None;
-        self
-    }
-
-    pub fn command(mut self, command: String) -> Self {
-        self.command = command;
-        self
-    }
-
-    pub fn build(self) -> ClientCommand {
-        ClientCommand {
-            target: self.target,
-            command: self.command,
-        }
+impl Display for ClientCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let target = match &self.target {
+            Some(target) => &target,
+            None => "all",
+        };
+        write!(f, "{}:{}", target, self.command)
     }
 }
 

@@ -7,22 +7,14 @@ use tokio::fs;
 use tokio::net::TcpListener;
 use tokio::sync::{RwLock, broadcast};
 use tokio::time;
-use tonic::{Request, Response, Status};
 
 use crate::client::command::ClientCommand;
 use crate::client::handler::{self, ClientHandler};
 use crate::client::info::ClientInfo;
-use crate::server::grpc::controller_server::Controller;
-use crate::server::grpc::*;
 use crate::settings::Settings;
 
-pub use crate::server::grpc::ClientInfo as ProtoClientInfo;
-pub use crate::server::grpc::SendCommandToClientRequest;
-pub use crate::server::grpc::controller_server::ControllerServer;
-
-mod grpc {
-    tonic::include_proto!("controller");
-}
+pub mod grpc;
+pub mod rest;
 
 pub struct Server {
     settings: Settings,
@@ -40,18 +32,22 @@ impl Server {
     }
 
     pub async fn list_online_clients_impl(&self) -> Vec<ClientInfo> {
+        debug!(target: "server", "listing online clients");
         self.online_clients.read().await.clone()
     }
 
     pub async fn get_client_log_impl(&self, imei: &str) -> Option<String> {
+        debug!(target: "server", "getting client log for imei: {}", imei);
         let log_path = handler::log_path(&self.settings.output_dir, imei);
         fs::read_to_string(&log_path).await.ok()
     }
 
-    pub fn send_command_impl(&self, command: ClientCommand) -> bool {
+    pub fn send_command_impl(&self, command: &ClientCommand) -> bool {
+        debug!(target: "server", "sending command: {}", command);
+
         let send_err = self.command_tx.send(command.clone()).err();
         if send_err.is_some() {
-            warn!(target: "Server", "no active receivers for command: {:?}", command);
+            warn!(target: "server", "no active receivers for command: {}", command);
         }
         send_err.is_none()
     }
@@ -92,56 +88,5 @@ impl Server {
                 online_clients.write().await.retain(|c| c != &info);
             });
         }
-    }
-}
-
-#[tonic::async_trait]
-impl Controller for Arc<Server> {
-    #[doc = "Get the list of online clients"]
-    async fn get_online_clients(
-        &self,
-        _request: Request<OnlineClientsRequest>,
-    ) -> Result<Response<OnlineClientsResponse>, Status> {
-        let proto_clients: Vec<ProtoClientInfo> = self
-            .list_online_clients_impl()
-            .await
-            .into_iter()
-            .map(|c| c.into())
-            .collect();
-
-        debug!(target: "gRPC", "online clients: {:?}", proto_clients);
-
-        let response = OnlineClientsResponse {
-            clients: proto_clients,
-        };
-
-        Ok(Response::new(response))
-    }
-
-    #[doc = "Get the log of specific client"]
-    async fn get_client_log(
-        &self,
-        request: Request<ClientLogRequest>,
-    ) -> Result<Response<ClientLogResponse>, Status> {
-        let imei = &request.get_ref().imei;
-        let log_content = self.get_client_log_impl(imei).await;
-
-        debug!(target: "gRPC", "client log for {}: {:?}", imei, log_content);
-
-        let response = ClientLogResponse { log: log_content };
-
-        Ok(Response::new(response))
-    }
-
-    #[doc = "Send command to specific client, imei for null means broadcast to all clients"]
-    async fn send_command(
-        &self,
-        request: Request<SendCommandToClientRequest>,
-    ) -> Result<Response<SendCommandToClientResponse>, Status> {
-        let command: ClientCommand = request.into_inner().into();
-        let success = self.send_command_impl(command);
-
-        let response = SendCommandToClientResponse { success };
-        Ok(Response::new(response))
     }
 }
