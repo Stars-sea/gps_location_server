@@ -19,7 +19,15 @@ mod settings;
 #[tokio::main]
 async fn main() -> Result<()> {
     env_logger::init();
+    println!(
+        "Starting {} (version {})...",
+        env!("CARGO_PKG_NAME"),
+        env!("CARGO_PKG_VERSION")
+    );
+    println!("Powered by {}", env!("CARGO_PKG_AUTHORS"));
+    println!("Repository: {}\n", env!("CARGO_PKG_REPOSITORY"));
 
+    info!(target: "main", "loading settings from settings.json");
     let settings = settings::load_from_file("settings.json").await?;
 
     let (command_tx, _) = broadcast::channel::<client::command::ClientCommand>(16);

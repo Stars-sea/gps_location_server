@@ -1,7 +1,12 @@
 [package]
 name = "gps_location_server"
+description = "A server interact with 4G & GPS devices implemented in Rust"
 version = "0.2.0"
 edition = "2024"
+authors = ["Stars sea <stars_sea@outlook.com>"]
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/Stars-sea/gps_location_server"
 
 [dependencies]
 anyhow = "1.0.100"
