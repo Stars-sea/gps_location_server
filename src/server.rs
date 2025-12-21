@@ -5,7 +5,7 @@ use anyhow::Result;
 use log::{debug, warn};
 use tokio::fs;
 use tokio::net::TcpListener;
-use tokio::sync::{Mutex, broadcast};
+use tokio::sync::{RwLock, broadcast};
 use tokio::time;
 use tonic::{Request, Response, Status};
 
@@ -24,11 +24,10 @@ mod grpc {
     tonic::include_proto!("controller");
 }
 
-#[derive(Clone, Debug)]
 pub struct Server {
     settings: Settings,
     command_tx: broadcast::Sender<ClientCommand>,
-    online_clients: Arc<Mutex<Vec<ClientInfo>>>,
+    online_clients: Arc<RwLock<Vec<ClientInfo>>>,
 }
 
 impl Server {
@@ -36,7 +35,7 @@ impl Server {
         Self {
             settings,
             command_tx,
-            online_clients: Arc::new(Mutex::new(Vec::new())),
+            online_clients: Arc::new(RwLock::new(Vec::new())),
         }
     }
 
@@ -68,19 +67,19 @@ impl Server {
                     .await
                     .unwrap()
                     .unwrap();
-                online_clients.lock().await.push(info.clone());
+                online_clients.write().await.push(info.clone());
 
                 client_handler.run().await;
 
                 // Remove client from online clients list on disconnect
-                online_clients.lock().await.retain(|c| c != &info);
+                online_clients.write().await.retain(|c| c != &info);
             });
         }
     }
 }
 
 #[tonic::async_trait]
-impl Controller for Server {
+impl Controller for Arc<Server> {
     #[doc = "Get the list of online clients"]
     async fn get_online_clients(
         &self,
@@ -88,7 +87,7 @@ impl Controller for Server {
     ) -> Result<Response<OnlineClientsResponse>, Status> {
         let proto_clients: Vec<ProtoClientInfo> = self
             .online_clients
-            .lock()
+            .read()
             .await
             .iter()
             .cloned()

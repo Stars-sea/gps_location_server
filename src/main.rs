@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use anyhow::Result;
 use log::{error, info};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -22,16 +24,16 @@ async fn main() -> Result<()> {
 
     let (command_tx, _) = broadcast::channel::<client::command::ClientCommand>(16);
 
-    let server = server::Server::new(settings, command_tx.clone());
-    let server_clone = server.clone();
+    let server = Arc::new(server::Server::new(settings, command_tx.clone()));
 
     // Start TCP server loop
+    let server_clone = server.clone();
     info!(target: "main", "starting server at {}", address);
-    tokio::spawn(async move { server_clone.server_loop().await.unwrap() });
+    tokio::spawn(async move { server_clone.server_loop().await.expect("server loop error") });
 
     // Start console input loop
     info!(target: "main", "starting console input loop");
-    tokio::spawn(async move { console_loop(command_tx).await });
+    tokio::spawn(async move { console_loop(command_tx).await.expect("console loop error") });
 
     // Start gRPC server
     info!(target: "main", "starting gRPC server at {}", grpc_address);
@@ -42,27 +44,27 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn console_loop(command_tx: broadcast::Sender<client::command::ClientCommand>) {
+async fn console_loop(command_tx: broadcast::Sender<client::command::ClientCommand>) -> Result<()> {
     let mut stdin = BufReader::new(tokio::io::stdin());
     let mut line = String::new();
 
     loop {
         line.clear();
-        match stdin.read_line(&mut line).await {
-            Ok(0) => {
-                info!(target: "console", "stdin closed.");
-                break;
-            }
-            Ok(_) => {
-                let command = client::command::parse_command(line.trim());
-                if command_tx.send(command).is_err() {
-                    info!(target: "console", "no active receivers");
-                }
-            }
-            Err(e) => {
-                error!(target: "console", "failed to read from stdin: {}", e);
-                break;
-            }
+        let size = stdin.read_line(&mut line).await;
+        if let Err(e) = size {
+            error!(target: "console", "failed to read from stdin: {}", e);
+            return Err(e.into());
+        }
+
+        let size = size?;
+        if size == 0 {
+            info!(target: "console", "stdin closed.");
+            return Ok(());
+        }
+
+        let command = client::command::parse_command(line.trim());
+        if command_tx.send(command).is_err() {
+            info!(target: "console", "no active receivers");
         }
     }
 }
