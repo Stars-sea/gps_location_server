@@ -12,7 +12,7 @@
 ### 使用 Docker 部署（推荐）
 
 1. 首先 SSH 登录服务器。确保服务器安装了 Docker，安装方法不再赘述
-2. 运行以下命令构建 Docker 镜像（感觉卡住了可以仔细看看 `Dockerfile` 的内容）：
+2. 运行以下命令构建 Docker 镜像：
    ```bash
    $ git clone git@github.com:Stars-sea/gps_location_server.git
    $ cd ./gps_location_server
@@ -92,8 +92,8 @@
 - `grpc.address`：gRPC 监听地址
 
 `rest` 负责控制 REST 服务，提供 HTTP API
-- `grpc.enabled`：REST 服务是否开启
-- `grpc.address`：REST 监听地址
+- `rest.enabled`：REST 服务是否开启
+- `rest.address`：REST 监听地址
 
 `heartbeat_sec` 为心跳包间隔，确保不会出现 TCP 半连接的情况（单位：秒）
 
@@ -105,6 +105,8 @@
 > 
 > 使用 Docker 部署需要注意 `Dockerfile` 和 `settings.json` 关联  
 > 务必确保配置的端口、输出目录等保持一致
+>
+> `grpc` 服务默认不开启编译，如需要请加上 `--features grpc` 编译
 
 ## LICENSE / 许可
 
