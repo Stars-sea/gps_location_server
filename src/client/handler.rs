@@ -112,7 +112,6 @@ impl ClientHandler {
         let mut registered_info = RegisteredClientInfo::find_or_create(&id, &info).await;
         registered_info.update_last_seen();
         registered_info.save().await?;
-
         Ok(())
     }
 

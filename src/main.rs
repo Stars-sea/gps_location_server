@@ -30,7 +30,7 @@ async fn main() -> Result<()> {
     println!("Repository: {}\n", env!("CARGO_PKG_REPOSITORY"));
 
     info!(target: "main", "loading settings from settings.json");
-    let settings = settings::load_from_file("settings.json").await?;
+    let settings = settings::Settings::load().await?;
 
     let (command_tx, _) = broadcast::channel::<client::command::ClientCommand>(16);
 

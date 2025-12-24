@@ -44,8 +44,11 @@ impl RegisteredClientInfo {
     const FILE_NAME: &str = "registered_info.json";
 
     pub async fn load() -> Result<Vec<Self>> {
-        let mut file = fs::File::open(Self::FILE_NAME).await?;
+        if !fs::try_exists(Self::FILE_NAME).await.unwrap_or(false) {
+            return Ok(Vec::new());
+        }
 
+        let mut file = fs::File::open(Self::FILE_NAME).await?;
         let mut dst = String::new();
         file.read_to_string(&mut dst).await?;
         Ok(serde_json::from_str(&dst)?)

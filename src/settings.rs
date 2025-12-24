@@ -21,12 +21,16 @@ pub struct ServiceConfig {
     pub address: String,
 }
 
-pub async fn load_from_file(path: &str) -> Result<Settings> {
-    let mut file = File::open(path).await?;
+impl Settings {
+    const FILE_NAME: &str = "settings.json";
 
-    let mut data = String::new();
-    file.read_to_string(&mut data).await?;
+    pub async fn load() -> Result<Settings> {
+        let mut file = File::open(Self::FILE_NAME).await?;
 
-    let json: Settings = serde_json::from_str(&data)?;
-    Ok(json)
+        let mut data = String::new();
+        file.read_to_string(&mut data).await?;
+
+        let json: Settings = serde_json::from_str(&data)?;
+        Ok(json)
+    }
 }
