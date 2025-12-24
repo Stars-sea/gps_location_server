@@ -33,6 +33,16 @@ message ClientInfo {
     int32 csq = 4;
 }
 
+message RegisteredClientInfo {
+    ClientInfo base_info = 1;
+
+    optional string registered_name = 2;
+    repeated string tags = 3;
+
+    string first_seen = 4;
+    string last_seen = 5;
+}
+
 message OnlineClientsRequest {
 }
 
@@ -44,7 +54,7 @@ message RegisteredClientsRequest {
 }
 
 message RegisteredClientsResponse {
-    repeated string imeis = 1;
+    repeated RegisteredClientInfo infos = 1;
 }
 
 message ClientLogRequest {

@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use anyhow::Result;
 use log::{debug, warn};
-use regex::Regex;
 use tokio::fs;
 use tokio::net::TcpListener;
 use tokio::sync::{RwLock, broadcast};
@@ -37,29 +36,6 @@ impl Server {
     pub async fn list_online_clients_impl(&self) -> Vec<ClientInfo> {
         debug!(target: "server", "listing online clients");
         self.online_clients.read().await.clone()
-    }
-
-    pub async fn list_registered_clients_impl(&self) -> Vec<String> {
-        debug!(target: "server", "getting registered clients");
-        let entries = fs::read_dir(&self.settings.output_dir).await;
-        if entries.is_err() {
-            return Vec::new();
-        }
-        let mut entries = entries.unwrap();
-
-        let pattern = Regex::new(r"^\d{15}$").unwrap();
-        let mut imeis = Vec::new();
-
-        while let Some(entry) = entries.next_entry().await.unwrap_or(None) {
-            let file_name = entry.file_name();
-            let file_name_str = file_name.to_string_lossy();
-            if !pattern.is_match(&file_name_str) {
-                continue;
-            }
-
-            imeis.push(file_name_str.to_string());
-        }
-        imeis
     }
 
     pub async fn get_client_log_impl(&self, imei: &str) -> Option<String> {

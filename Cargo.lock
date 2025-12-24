@@ -355,7 +355,6 @@ dependencies = [
  "env_logger",
  "log",
  "prost",
- "regex",
  "serde",
  "serde_json",
  "tokio",

@@ -56,8 +56,14 @@ impl Controller for Arc<Server> {
         &self,
         _request: Request<RegisteredClientsRequest>,
     ) -> Result<Response<RegisteredClientsResponse>, Status> {
-        let imeis: Vec<String> = self.list_registered_clients_impl().await;
-        let response = RegisteredClientsResponse { imeis };
+        let infos = info::RegisteredClientInfo::load()
+            .await
+            .unwrap_or_default()
+            .into_iter()
+            .map(|info| info.into())
+            .collect();
+
+        let response = RegisteredClientsResponse { infos };
 
         Ok(Response::new(response))
     }
@@ -95,6 +101,18 @@ impl From<info::ClientInfo> for ClientInfo {
             iccid: info.iccid,
             fver: info.fver,
             csq: info.csq,
+        }
+    }
+}
+
+impl From<info::RegisteredClientInfo> for RegisteredClientInfo {
+    fn from(info: info::RegisteredClientInfo) -> Self {
+        Self {
+            base_info: Some(info.base_info.into()),
+            registered_name: info.registered_name,
+            tags: info.tags,
+            first_seen: info.first_seen,
+            last_seen: info.last_seen,
         }
     }
 }

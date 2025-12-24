@@ -10,6 +10,8 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::sync::broadcast::{self, error::RecvError};
 
+use crate::client::info::RegisteredClientInfo;
+
 use super::command::ClientCommand;
 use super::info::ClientInfo;
 
@@ -44,11 +46,10 @@ impl ClientHandler {
     }
 
     pub async fn verify_client(&mut self) -> Result<ClientInfo> {
-        let mut client_data = vec![0u8; 1024];
+        let mut received = String::new();
 
-        let read_result = self.client.read(&mut client_data).await;
-        self.handle_read_result(read_result, &mut client_data)
-            .await?;
+        let read_result = self.client.read_to_string(&mut received).await;
+        self.handle_read_result(read_result, &received).await?;
 
         return self
             .client_info
@@ -59,16 +60,17 @@ impl ClientHandler {
     pub async fn run(&mut self) {
         info!(target: "client_handler", "{} connected", self);
 
-        let mut client_data = vec![0u8; 1024];
+        let mut client_data = String::new();
 
         loop {
             tokio::select! {
                 biased;
 
-                read_result = self.client.read(&mut client_data) => {
-                    if self.handle_read_result(read_result, &mut client_data).await.is_err() {
+                read_result = self.client.read_to_string(&mut client_data) => {
+                    if self.handle_read_result(read_result, &client_data).await.is_err() {
                         break;
                     }
+                    client_data.clear();
                 }
 
                 command = self.command_rx.recv() => {
@@ -92,10 +94,32 @@ impl ClientHandler {
         self.client_info.as_ref().map(|info| info.identifier())
     }
 
+    async fn register(&mut self, data: &str) -> Result<()> {
+        let info = ClientInfo::from_json(&data).unwrap();
+        let id = info.identifier();
+
+        self.client_info.replace(info.clone());
+        info!(target: "client_handler", "{self} registered");
+
+        let path = log_path(&self.output_dir, &id);
+        let file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)
+            .await?;
+        self.output_writer.replace(file);
+
+        let mut registered_info = RegisteredClientInfo::find_or_create(&id, &info).await;
+        registered_info.update_last_seen();
+        registered_info.save().await?;
+
+        Ok(())
+    }
+
     async fn handle_read_result(
         &mut self,
         read_result: tokio::io::Result<usize>,
-        client_data: &mut [u8],
+        received: &String,
     ) -> Result<()> {
         if let Err(e) = read_result {
             error!(target: "client_handler", "failed to read from {}: {}", self, e);
@@ -107,7 +131,6 @@ impl ClientHandler {
             return Err(anyhow!("client disconnected"));
         }
 
-        let received = String::from_utf8_lossy(&client_data[..read_len]);
         if received == "HEARTBEAT" {
             debug!(target: "client_handler", "received heartbeat from {}", self);
             return Ok(());
@@ -122,22 +145,9 @@ impl ClientHandler {
         Ok(())
     }
 
-    async fn handle_received_data(&mut self, data: &str) -> Result<()> {
+    async fn handle_received_data(&mut self, data: &String) -> Result<()> {
         if self.client_info.is_none() {
-            let info = ClientInfo::from_json(&data).unwrap();
-            let id = info.identifier();
-
-            self.client_info.replace(info);
-            info!(target: "client_handler", "{self} registered");
-
-            let path = log_path(&self.output_dir, &id);
-            let file = fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(path)
-                .await?;
-            self.output_writer.replace(file);
-            return Ok(());
+            return self.register(data).await;
         }
 
         let time = Utc::now().to_rfc3339();
