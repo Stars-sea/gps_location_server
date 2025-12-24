@@ -24,6 +24,26 @@ service Controller {
      * Send command to specific client, imei for null means broadcast to all clients
      */
     rpc SendCommand(SendCommandToClientRequest) returns (SendCommandToClientResponse);
+
+    /*
+     * Get specific client info
+     */
+    rpc GetClientInfo(ClientInfoRequest) returns (ClientInfoResponse);
+
+    /*
+     * Set registered name for a client
+     */
+    rpc SetRegisteredName(SetRegisteredNameRequest) returns (InfoOperationResponse);
+
+    /*
+     * Add a tag to a client
+     */
+    rpc AddTag(AddTagRequest) returns (InfoOperationResponse);
+
+    /*
+     * Remove a tag from a client
+     */
+    rpc RemoveTag(RemoveTagRequest) returns (InfoOperationResponse);
 }
 
 message ClientInfo {
@@ -71,5 +91,32 @@ message SendCommandToClientRequest {
 }
 
 message SendCommandToClientResponse {
+    bool success = 1;
+}
+
+message ClientInfoRequest {
+    string imei = 1;
+}
+
+message ClientInfoResponse {
+    optional RegisteredClientInfo info = 1;
+}
+
+message SetRegisteredNameRequest {
+    string imei = 1;
+    string name = 2;
+}
+
+message AddTagRequest {
+    string imei = 1;
+    string tag = 2;
+}
+
+message RemoveTagRequest {
+    string imei = 1;
+    string tag = 2;
+}
+
+message InfoOperationResponse {
     bool success = 1;
 }

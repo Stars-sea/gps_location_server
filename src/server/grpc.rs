@@ -92,6 +92,70 @@ impl Controller for Arc<Server> {
         let response = SendCommandToClientResponse { success };
         Ok(Response::new(response))
     }
+
+    #[doc = "Get specific client info"]
+    async fn get_client_info(
+        &self,
+        request: Request<ClientInfoRequest>,
+    ) -> Result<Response<ClientInfoResponse>, Status> {
+        let imei = &request.get_ref().imei;
+        let info = info::RegisteredClientInfo::find(imei).await;
+        let response = ClientInfoResponse {
+            info: info.map(|i| i.into()),
+        };
+        Ok(Response::new(response))
+    }
+
+    #[doc = "Set registered name for a client"]
+    async fn set_registered_name(
+        &self,
+        request: Request<SetRegisteredNameRequest>,
+    ) -> Result<Response<InfoOperationResponse>, Status> {
+        let req = request.get_ref();
+        let info = info::RegisteredClientInfo::find(&req.imei).await;
+        if info.is_none() {
+            return Ok(Response::new(InfoOperationResponse { success: false }));
+        }
+
+        let mut info = info.unwrap();
+        info.set_registered_name(req.name.clone());
+        let success = info.save().await.is_ok();
+        Ok(Response::new(InfoOperationResponse { success }))
+    }
+
+    #[doc = "Add a tag to a client"]
+    async fn add_tag(
+        &self,
+        request: Request<AddTagRequest>,
+    ) -> Result<Response<InfoOperationResponse>, Status> {
+        let req = request.get_ref();
+        let info = info::RegisteredClientInfo::find(&req.imei).await;
+        if info.is_none() {
+            return Ok(Response::new(InfoOperationResponse { success: false }));
+        }
+
+        let mut info = info.unwrap();
+        info.add_tag(req.tag.clone());
+        let success = info.save().await.is_ok();
+        Ok(Response::new(InfoOperationResponse { success }))
+    }
+
+    #[doc = "Remove a tag from a client"]
+    async fn remove_tag(
+        &self,
+        request: Request<RemoveTagRequest>,
+    ) -> Result<Response<InfoOperationResponse>, Status> {
+        let req = request.get_ref();
+        let info = info::RegisteredClientInfo::find(&req.imei).await;
+        if info.is_none() {
+            return Ok(Response::new(InfoOperationResponse { success: false }));
+        }
+
+        let mut info = info.unwrap();
+        info.remove_tag(&req.tag);
+        let success = info.save().await.is_ok();
+        Ok(Response::new(InfoOperationResponse { success }))
+    }
 }
 
 impl From<info::ClientInfo> for ClientInfo {

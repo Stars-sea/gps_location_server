@@ -99,7 +99,6 @@ impl ClientHandler {
         let id = info.identifier();
 
         self.client_info.replace(info.clone());
-        info!(target: "client_handler", "{self} registered");
 
         let path = log_path(&self.output_dir, &id);
         let file = fs::OpenOptions::new()
@@ -112,6 +111,8 @@ impl ClientHandler {
         let mut registered_info = RegisteredClientInfo::find_or_create(&id, &info).await;
         registered_info.update_last_seen();
         registered_info.save().await?;
+
+        info!(target: "client_handler", "{self} registered");
         Ok(())
     }
 
