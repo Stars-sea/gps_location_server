@@ -51,6 +51,17 @@ impl Controller for Arc<Server> {
         Ok(Response::new(response))
     }
 
+    #[doc = "Get the list of registered clients"]
+    async fn get_registered_clients(
+        &self,
+        _request: Request<RegisteredClientsRequest>,
+    ) -> Result<Response<RegisteredClientsResponse>, Status> {
+        let imeis: Vec<String> = self.list_registered_clients_impl().await;
+        let response = RegisteredClientsResponse { imeis };
+
+        Ok(Response::new(response))
+    }
+
     #[doc = "Get the log of specific client"]
     async fn get_client_log(
         &self,

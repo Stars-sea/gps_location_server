@@ -26,6 +26,7 @@ impl RestServer for Server {
 fn router(server: Arc<Server>) -> Router {
     Router::new()
         .route("/v1/clients/online", get(list_online_clients))
+        .route("/v1/clients/history", get(list_registered_clients))
         .route("/v1/clients/{imei}/log", get(get_client_log))
         .route("/v1/clients/command", post(send_command))
         .with_state(server)
@@ -33,6 +34,11 @@ fn router(server: Arc<Server>) -> Router {
 
 async fn list_online_clients(State(server): State<Arc<Server>>) -> Json<Vec<ClientInfo>> {
     let clients = server.list_online_clients_impl().await;
+    Json(clients)
+}
+
+async fn list_registered_clients(State(server): State<Arc<Server>>) -> Json<Vec<String>> {
+    let clients = server.list_registered_clients_impl().await;
     Json(clients)
 }
 

@@ -21,6 +21,7 @@ tonic = { version = "0.14.2", optional = true }
 tonic-prost = { version = "0.14.2", optional = true }
 axum = { version = "0.8.8", optional = true }
 tower-http = { version = "0.6", features = ["cors", "trace"], optional = true }
+regex = "1.12.2"
 
 [build-dependencies]
 tonic-prost-build = { version = "0.14.2", optional = true }

@@ -11,6 +11,11 @@ service Controller {
     rpc GetOnlineClients(OnlineClientsRequest) returns (OnlineClientsResponse);
 
     /*
+     * Get the list of registered clients
+     */
+    rpc GetRegisteredClients(RegisteredClientsRequest) returns (RegisteredClientsResponse);
+
+    /*
      * Get the log of specific client
      */
     rpc GetClientLog(ClientLogRequest) returns (ClientLogResponse);
@@ -33,6 +38,13 @@ message OnlineClientsRequest {
 
 message OnlineClientsResponse {
     repeated ClientInfo clients = 1;
+}
+
+message RegisteredClientsRequest {
+}
+
+message RegisteredClientsResponse {
+    repeated string imeis = 1;
 }
 
 message ClientLogRequest {
