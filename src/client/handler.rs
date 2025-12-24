@@ -46,10 +46,10 @@ impl ClientHandler {
     }
 
     pub async fn verify_client(&mut self) -> Result<ClientInfo> {
-        let mut received = String::new();
+        let mut received = vec![0u8; 1024];
 
-        let read_result = self.client.read_to_string(&mut received).await;
-        self.handle_read_result(read_result, &received).await?;
+        let read_result = self.client.read(&mut received).await;
+        self.handle_read_result(read_result, &mut received).await?;
 
         return self
             .client_info
@@ -60,14 +60,14 @@ impl ClientHandler {
     pub async fn run(&mut self) {
         info!(target: "client_handler", "{} connected", self);
 
-        let mut client_data = String::new();
+        let mut client_data = vec![0u8; 1024];
 
         loop {
             tokio::select! {
                 biased;
 
-                read_result = self.client.read_to_string(&mut client_data) => {
-                    if self.handle_read_result(read_result, &client_data).await.is_err() {
+                read_result = self.client.read(&mut client_data) => {
+                    if self.handle_read_result(read_result, &mut client_data).await.is_err() {
                         break;
                     }
                     client_data.clear();
@@ -119,7 +119,7 @@ impl ClientHandler {
     async fn handle_read_result(
         &mut self,
         read_result: tokio::io::Result<usize>,
-        received: &String,
+        received: &mut [u8],
     ) -> Result<()> {
         if let Err(e) = read_result {
             error!(target: "client_handler", "failed to read from {}: {}", self, e);
@@ -131,6 +131,7 @@ impl ClientHandler {
             return Err(anyhow!("client disconnected"));
         }
 
+        let received = String::from_utf8_lossy(&received[..read_len]);
         if received == "HEARTBEAT" {
             debug!(target: "client_handler", "received heartbeat from {}", self);
             return Ok(());
@@ -145,7 +146,7 @@ impl ClientHandler {
         Ok(())
     }
 
-    async fn handle_received_data(&mut self, data: &String) -> Result<()> {
+    async fn handle_received_data(&mut self, data: &str) -> Result<()> {
         if self.client_info.is_none() {
             return self.register(data).await;
         }
