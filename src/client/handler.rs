@@ -67,14 +67,15 @@ impl ClientHandler {
                 biased;
 
                 read_result = self.client.read(&mut client_data) => {
-                    if self.handle_read_result(read_result, &mut client_data).await.is_err() {
+                    if let Err(e) = self.handle_read_result(read_result, &mut client_data).await {
+                        warn!(target: "client_handler", "{} disconnected: {}", self, e);
                         break;
                     }
-                    client_data.clear();
                 }
 
                 command = self.command_rx.recv() => {
-                    if self.handle_client_command(command).await.is_err() {
+                    if let Err(e) = self.handle_client_command(command).await {
+                        warn!(target: "client_handler", "{} disconnected: {}", self, e);
                         break;
                     }
                 }
