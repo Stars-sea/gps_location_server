@@ -10,7 +10,7 @@ repository = "https://github.com/Stars-sea/gps_location_server"
 
 [dependencies]
 anyhow = "1.0.100"
-chrono = "0.4.42"
+chrono = { version = "0.4.42", features = ["serde"] }
 env_logger = "0.11.8"
 log = "0.4.29"
 prost = { version = "0.14.1", optional = true }

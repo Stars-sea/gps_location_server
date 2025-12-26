@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 
 use anyhow::Result;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -36,8 +37,8 @@ pub struct RegisteredClientInfo {
     pub registered_name: Option<String>,
     pub tags: Vec<String>,
 
-    pub first_seen: String,
-    pub last_seen: String,
+    pub first_seen: DateTime<Utc>,
+    pub last_seen: DateTime<Utc>,
 }
 
 impl RegisteredClientInfo {
@@ -63,7 +64,7 @@ impl RegisteredClientInfo {
     }
 
     pub async fn create(info: ClientInfo) -> Self {
-        let now = chrono::Utc::now().to_rfc3339();
+        let now = chrono::Utc::now();
         Self {
             base_info: info,
             registered_name: None,
@@ -81,7 +82,7 @@ impl RegisteredClientInfo {
     }
 
     pub fn update_last_seen(&mut self) {
-        self.last_seen = chrono::Utc::now().to_rfc3339();
+        self.last_seen = chrono::Utc::now();
     }
 
     pub fn add_tag(&mut self, tag: String) {
