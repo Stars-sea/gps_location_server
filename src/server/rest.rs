@@ -131,15 +131,15 @@ async fn send_command(
 }
 
 #[derive(Deserialize)]
-struct SetMetadataRequest {
+struct UpdateMetadataRequest {
     name: Option<String>,
-    tags: Vec<String>,
+    tags: Option<Vec<String>>,
 }
 
 async fn set_meta(
     State(_server): State<Arc<Server>>,
     Path(imei): Path<String>,
-    Json(request): Json<SetMetadataRequest>,
+    Json(request): Json<UpdateMetadataRequest>,
 ) -> Json<OperationResponse> {
     let info = RegisteredClientInfo::find(&imei).await;
     if info.is_none() {
@@ -150,7 +150,9 @@ async fn set_meta(
     if let Some(name) = request.name {
         info.set_name(name);
     }
-    info.tags = request.tags;
+    if let Some(tags) = request.tags {
+        info.tags = tags;
+    }
 
     let success = info.save().await.is_ok();
     Json(OperationResponse { success })
