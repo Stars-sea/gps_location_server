@@ -11,6 +11,8 @@ pub struct ClientInfo {
     pub imei: String,
     pub iccid: String,
     pub fver: String,
+
+    #[serde(skip)]
     pub csq: i32,
 }
 
@@ -34,7 +36,7 @@ impl Display for ClientInfo {
 pub struct RegisteredClientInfo {
     pub base_info: ClientInfo,
 
-    pub registered_name: Option<String>,
+    pub name: Option<String>,
     pub tags: Vec<String>,
 
     pub first_seen: DateTime<Utc>,
@@ -42,7 +44,7 @@ pub struct RegisteredClientInfo {
 }
 
 impl RegisteredClientInfo {
-    const FILE_NAME: &str = "registered_info.json";
+    const FILE_NAME: &str = "registered_infos.json";
 
     pub async fn load() -> Result<Vec<Self>> {
         if !fs::try_exists(Self::FILE_NAME).await.unwrap_or(false) {
@@ -67,17 +69,10 @@ impl RegisteredClientInfo {
         let now = chrono::Utc::now();
         Self {
             base_info: info,
-            registered_name: None,
+            name: None,
             tags: Vec::new(),
             first_seen: now.clone(),
             last_seen: now,
-        }
-    }
-
-    pub async fn find_or_create(imei: &str, info: &ClientInfo) -> Self {
-        match Self::find(imei).await {
-            Some(registered_info) => registered_info,
-            None => Self::create(info.clone()).await,
         }
     }
 
@@ -85,18 +80,8 @@ impl RegisteredClientInfo {
         self.last_seen = chrono::Utc::now();
     }
 
-    pub fn add_tag(&mut self, tag: String) {
-        if !self.tags.contains(&tag) {
-            self.tags.push(tag);
-        }
-    }
-
-    pub fn remove_tag(&mut self, tag: &str) {
-        self.tags.retain(|t| t != tag);
-    }
-
-    pub fn set_registered_name(&mut self, name: String) {
-        self.registered_name = Some(name);
+    pub fn set_name(&mut self, name: String) {
+        self.name = if name.is_empty() { None } else { Some(name) };
     }
 
     pub async fn save(&self) -> Result<()> {

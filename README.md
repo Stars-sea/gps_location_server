@@ -22,11 +22,11 @@
    ```bash
    $ mkdir -p ~/docker/gps_location_server/output
    $ cp ./settings.json ~/docker/gps_location_server/settings.json
-   $ echo "[]" > ~/docker/gps_location_server/registered_info.json
+   $ echo "[]" > ~/docker/gps_location_server/registered_infos.json
 
    $ sudo docker run -itd \
      --name gps_location_server_container \
-     -v ~/docker/gps_location_server/registered_info.json:/app/registered_info.json \
+     -v ~/docker/gps_location_server/registered_infos.json:/app/registered_infos.json \
      -v ~/docker/gps_location_server/settings.json:/app/settings.json \
      -v ~/docker/gps_location_server/output:/app/output/ \
      -e RUST_LOG=info \
