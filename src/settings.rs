@@ -5,8 +5,6 @@ use tokio::{fs::File, io::AsyncReadExt};
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Settings {
     pub address: String,
-    #[cfg(feature = "grpc")]
-    pub grpc: ServiceConfig,
     #[cfg(feature = "rest")]
     pub rest: ServiceConfig,
 

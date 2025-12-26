@@ -17,7 +17,7 @@ registry = "sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/"
 index = "sparse+https://mirrors.tuna.tsinghua.edu.cn/crates.io-index/"
 EOF
 
-RUN apk add --no-cache musl-dev protoc protobuf-dev
+RUN apk add --no-cache musl-dev
 
 WORKDIR /app
 COPY . ./
@@ -32,7 +32,6 @@ COPY --from=builder /app/target/release/gps_location_server ./
 COPY --from=builder /app/settings.json ./
 
 EXPOSE 1234
-EXPOSE 1235
 EXPOSE 3000
 ENV RUST_LOG=info
 RUN mkdir ./output

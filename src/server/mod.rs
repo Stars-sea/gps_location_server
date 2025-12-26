@@ -13,8 +13,6 @@ use crate::client::handler::{self, ClientHandler};
 use crate::client::info::ClientInfo;
 use crate::settings::Settings;
 
-#[cfg(feature = "grpc")]
-pub mod grpc;
 #[cfg(feature = "rest")]
 pub mod rest;
 
