@@ -12,8 +12,8 @@ pub struct ClientInfo {
     pub iccid: String,
     pub fver: String,
 
-    #[serde(skip)]
-    pub csq: i32,
+    #[serde(skip_serializing)]
+    pub csq: Option<i32>,
 }
 
 impl ClientInfo {

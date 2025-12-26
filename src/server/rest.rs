@@ -56,7 +56,7 @@ impl From<RegisteredClientInfo> for ClientInfoResponse {
             imei: info.base_info.imei,
             iccid: info.base_info.iccid,
             fver: info.base_info.fver,
-            csq: Some(info.base_info.csq),
+            csq: info.base_info.csq,
             name: info.name,
             tags: info.tags,
             first_seen: info.first_seen,
@@ -74,7 +74,7 @@ async fn list_clients(server: Arc<Server>) -> Result<Vec<ClientInfoResponse>> {
             let mut info: ClientInfoResponse = info.into();
 
             let online = online_clients.iter().find(|&c| c.imei == info.imei);
-            info.csq = online.map(|c| c.csq);
+            info.csq = online.and_then(|c| c.csq);
             info
         })
         .collect();
@@ -105,7 +105,7 @@ async fn get_client_info(
 
     let online_clients = server.list_online_clients_impl().await;
     let online = online_clients.iter().find(|&c| c.imei == info.imei);
-    info.csq = online.map(|c| c.csq);
+    info.csq = online.and_then(|c| c.csq);
 
     Json(Some(info))
 }
